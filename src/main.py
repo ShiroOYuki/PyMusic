@@ -3,12 +3,18 @@ from pydub import AudioSegment
 from time import time_ns
 import os
 import pytube.request
+import re
 
 pytube.request.default_range_size = 2 * 1024 * 1024 # 每 2 MB 回傳一次 on_progress
 
 class Downloader:
     def __init__(self):
         self.test_url = "https://www.youtube.com/watch?v=t3kOeUsnocg"
+    
+    def remove_special_characters(self, text):
+        pattern = r'[<>:"/\\|?*]'  # 匹配不允许的符号
+        cleaned_text = re.sub(pattern, '', text)
+        return cleaned_text
     
     def on_progress(self, stream, chunk, bytes_remaining):
         total_size = stream.filesize
@@ -35,27 +41,32 @@ class Downloader:
     def download(self, url=None, sub_folder = ""):
         if url is None or url == "":
             url = self.test_url
+        sub_folder = self.remove_special_characters(sub_folder)
         if sub_folder != "":
             sub_folder += "/"
         print("Downloading audio from", url)
         filename = "./temp/" + str(time_ns()) + ".webm"
-        print("Getting...")
+        print("Getting audio...")
         
         # https://pytube.io/en/latest/api.html?highlight=on_progress#pytube.YouTube.register_on_progress_callback
         yt = YouTube(url, on_progress_callback=self.on_progress)
         # yt.register_on_progress_callback(self.on_progress)
         self.print_info(yt)
-        print("Downloading...")
+        
         
         # https://pytube.io/en/latest/user/streams.html#filtering-for-audio-only-streams
         # for t in yt.streams.filter(file_extension="webm", type="audio"):
         #     print("Mime type:", t)
         
         # print("By Itag:", yt.streams.get_by_itag(251))
+        print("Getting stream...")
+        audio = yt.streams
         
-        audio = yt.streams.get_by_itag(251)
+        print("Downloading...")
+        audio = audio.get_by_itag(251)
         print("Size:", audio.filesize_mb, "MB")
         default_filename = audio.default_filename.split(".")[0]
+        default_filename = self.remove_special_characters(default_filename)
         audio.download(filename=filename)
         self.temp_to_mp3("./" + filename, "./download/" + sub_folder, default_filename + ".mp3")
         return filename, default_filename
@@ -80,7 +91,14 @@ class Downloader:
             print("Save to:", os.path.join(os.getcwd(), default_filename))
         else:
             print("Error")
+            
+    def check_folder_exist(self):
+        if not os.path.isdir("./temp"):
+            os.mkdir("temp")
+        if not os.path.isdir("./download"):
+            os.mkdir("download")
         
 if __name__ == "__main__":
+    Downloader().check_folder_exist()
     Downloader().check_is_list(input("Input YT Link: "))
     
