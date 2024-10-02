@@ -38,7 +38,7 @@ class Downloader:
             print("(1/1)")
             self.download(url)
     
-    def download(self, url=None, sub_folder = ""):
+    def download(self, url=None, sub_folder = "", format="mp3"):
         if url is None or url == "":
             url = self.test_url
         sub_folder = self.remove_special_characters(sub_folder)
@@ -68,8 +68,8 @@ class Downloader:
         default_filename = audio.default_filename.split(".")[0]
         default_filename = self.remove_special_characters(default_filename)
         audio.download(filename=filename)
-        self.temp_to_mp3("./" + filename, "./download/" + sub_folder, default_filename + ".mp3")
-        return filename, default_filename
+        self.temp_to_mp3("./" + filename, "./download/" + sub_folder, default_filename, format)
+        return filename, default_filename + "." + format
     
     def print_info(self, yt: YouTube):
         print("-"*12 + " Sone Info " + "-"*12)
@@ -79,16 +79,17 @@ class Downloader:
         print("Publish Date:", yt.publish_date)
         print("-"*35)
     
-    def temp_to_mp3(self, temp_path, mp3_folder, default_filename):
+    def temp_to_mp3(self, temp_path, mp3_folder, default_filename, format="mp3"):
         if os.path.isfile(temp_path):
-            print("Saving...")
             if not os.path.isdir(mp3_folder):
                 os.mkdir(mp3_folder)
+            print("Reading...")
             audio = AudioSegment.from_file(temp_path, format="webm")
-            audio.export(mp3_folder + default_filename, format="mp3")
+            print("Saving...")
+            audio.export(mp3_folder + default_filename + "." + format, format=format)
             print("Removing temp...")
             os.remove(temp_path)
-            print("Save to:", os.path.join(os.getcwd(), default_filename))
+            print("Save to:", os.path.join(os.getcwd(), default_filename + "." + format))
         else:
             print("Error")
             
